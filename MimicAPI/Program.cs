@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using MimicAPI.Helpers;
 
 namespace MimicAPI
 {
@@ -14,6 +15,9 @@ namespace MimicAPI
     {
         public static void Main(string[] args)
         {
+            //Tem que importar a classe usando o atalho "Ctrl + ."
+            CurrentDirectoryHelpers.SetCurrentDirectory(); //Adicionei aqui.
+
             CreateWebHostBuilder(args).Build().Run();
         }
 
