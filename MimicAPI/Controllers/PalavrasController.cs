@@ -1,57 +1,40 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using MimicAPI.Database;
-using MimicAPI.Models;
-using MimicAPI.Helpers;
 using Microsoft.EntityFrameworkCore;
+using MimicAPI.Helpers;
+using MimicAPI.Models;
 using Newtonsoft.Json;
+using System.Linq;
+using MimicAPI.Repositories.Contracts;
 
 namespace MimicAPI.Controllers
 {
     [Route("api/palavras")]
     public class PalavrasController : ControllerBase
     {
-        private readonly MimicContext _banco;
-        public PalavrasController(MimicContext banco)
+        private readonly IPalavraRepository _repository;
+        public PalavrasController(IPalavraRepository respository)
         {
-            _banco = banco;
+            _repository = respository;
         }
         
         [Route("")]
         [HttpGet]
         public IActionResult ObterTodas([FromQuery]PalavraUrlQuery query)
         {
-            var item = _banco.Palavras.AsQueryable();
+            var item = _repository.ObterPalavras(query);
 
-            if (query.Data.HasValue)
-                item = item.Where(p => p.Criado > query.Data.Value || p.Atualizado > query.Data.Value);
+            if (query.PagNumero > item.Paginacao.TotalPaginas) return NotFound();
 
-            if (query.PagNumero.HasValue)
-            {
-                var quantidadeTotalRegistros = item.Count();
-                item = item.Skip((query.PagNumero.Value - 1) * query.PagRegistro.Value).Take(query.PagRegistro.Value);
+            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
 
-                var paginacao = new Paginacao();
-                paginacao.NumeroPagina = query.PagNumero.Value;
-                paginacao.RegistrosPorPagina = query.PagRegistro.Value;
-                paginacao.TotalRegistros = quantidadeTotalRegistros;
-                paginacao.TotalPaginas = (int)Math.Ceiling((double)quantidadeTotalRegistros / query.PagRegistro.Value);
-
-                Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(paginacao));
-
-                if (query.PagNumero > paginacao.TotalPaginas) return NotFound();
-            }
-            return Ok(item);
+            return Ok(item.ToList());
         }
 
         [Route("{id}")]
         [HttpGet]
         public IActionResult ObterPalavra(int id)
         {
-            var palavra = _banco.Palavras.Find(id);
+            var palavra = _repository.Obter(id);
             if (palavra == null) return NotFound();
 
             return Ok(palavra);
@@ -59,24 +42,21 @@ namespace MimicAPI.Controllers
 
         [Route("")]
         [HttpPost]
-        public IActionResult Cadastrar([FromBody]Palavra model)
+        public IActionResult Cadastrar([FromBody]Palavra palavra)
         {
-            _banco.Palavras.Add(model);
-            _banco.SaveChanges();
-
-            return Created($"/api/palavras/{model.Id}", model);
+            _repository.Cadastrar(palavra);
+            return Created($"/api/palavras/{palavra.Id}", palavra);
         }
 
         [Route("{id}")]
         [HttpPut]
-        public IActionResult Atualizar(int id, [FromBody]Palavra model)
+        public IActionResult Atualizar(int id, [FromBody]Palavra palavra)
         {
-            var palavra = _banco.Palavras.AsNoTracking().FirstOrDefault(p => p.Id == id);
-            if (palavra == null) return NotFound();
+            var model = _repository.Obter(id);
+            if (model == null) return NotFound();
 
-            model.Id = id;
-            _banco.Palavras.Update(model);
-            _banco.SaveChanges();
+            palavra.Id = id;
+            _repository.Atualizar(palavra);
 
             return Ok();
         }
@@ -85,13 +65,10 @@ namespace MimicAPI.Controllers
         [HttpDelete]
         public IActionResult Deletar(int id)
         {
-            var palavra = _banco.Palavras.Find(id);
+            var palavra = _repository.Obter(id);
             if (palavra == null) return NotFound();
 
-            palavra.Ativo = false;
-
-            _banco.Palavras.Update(palavra);
-            _banco.SaveChanges();
+            _repository.Deletar(id);
 
             return NoContent();
         }
