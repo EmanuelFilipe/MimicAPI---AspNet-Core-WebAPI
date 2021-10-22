@@ -5,6 +5,9 @@ using MimicAPI.Models;
 using Newtonsoft.Json;
 using System.Linq;
 using MimicAPI.Repositories.Contracts;
+using AutoMapper;
+using MimicAPI.Models.DTO;
+using System.Collections.Generic;
 
 namespace MimicAPI.Controllers
 {
@@ -12,32 +15,41 @@ namespace MimicAPI.Controllers
     public class PalavrasController : ControllerBase
     {
         private readonly IPalavraRepository _repository;
-        public PalavrasController(IPalavraRepository respository)
+        private readonly IMapper _mapper;
+
+        public PalavrasController(IPalavraRepository repository, IMapper mapper)
         {
-            _repository = respository;
+            _repository = repository;
+            _mapper = mapper;
         }
-        
+
         [Route("")]
-        [HttpGet]
         public IActionResult ObterTodas([FromQuery]PalavraUrlQuery query)
         {
             var item = _repository.ObterPalavras(query);
 
-            if (query.PagNumero > item.Paginacao.TotalPaginas) return NotFound();
+            if (item.Count == 0) return NotFound();
 
-            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
+            if (item.Paginacao != null)
+                Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(item.Paginacao));
 
             return Ok(item.ToList());
         }
 
-        [Route("{id}")]
-        [HttpGet]
+        [HttpGet("{id}", Name = "ObterPalavra")]
         public IActionResult ObterPalavra(int id)
         {
             var palavra = _repository.Obter(id);
             if (palavra == null) return NotFound();
 
-            return Ok(palavra);
+            PalavraDTO palavraDTO = _mapper.Map<Palavra, PalavraDTO>(palavra);
+
+            palavraDTO.Links = new List<LinkDTO>();
+            palavraDTO.Links.Add(new LinkDTO("self", Url.Link("ObterPalavra", new { id }), "GET"));
+            palavraDTO.Links.Add(new LinkDTO("update", Url.Link("AtualizarPalavra", new { id }), "PUT"));
+            palavraDTO.Links.Add(new LinkDTO("delete", Url.Link("ExcluirPalavra", new { id }), "DELETE"));
+
+            return Ok(palavraDTO);
         }
 
         [Route("")]
@@ -48,8 +60,7 @@ namespace MimicAPI.Controllers
             return Created($"/api/palavras/{palavra.Id}", palavra);
         }
 
-        [Route("{id}")]
-        [HttpPut]
+        [HttpPut("{id}", Name = "AtualizarPalavra")]
         public IActionResult Atualizar(int id, [FromBody]Palavra palavra)
         {
             var model = _repository.Obter(id);
@@ -61,8 +72,7 @@ namespace MimicAPI.Controllers
             return Ok();
         }
 
-        [Route("{id}")]
-        [HttpDelete]
+        [HttpDelete("{id}", Name = "ExcluirPalavra")]
         public IActionResult Deletar(int id)
         {
             var palavra = _repository.Obter(id);
