@@ -13,6 +13,7 @@ namespace MimicAPI.Helpers
         public MapperProfileDTO()
         {
             CreateMap<Palavra, PalavraDTO>();
+            CreateMap<PaginationList<Palavra>, PaginationList<PalavraDTO>>();
 
             // para situações que o nome de uma propriedade e um objeto esta diferente do outro...
             // utileze o "...().ForMember()" informando que campo x da objeto 1 vai receber o campo y do objeto 2
