@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using MimicAPI.Models;
-using MimicAPI.Helpers;
+﻿using MimicAPI.Helpers;
+using MimicAPI.V1.Models;
 
-namespace MimicAPI.Repositories.Contracts
+namespace MimicAPI.V1.Repositories.Contracts
 {
     public interface IPalavraRepository
     {
