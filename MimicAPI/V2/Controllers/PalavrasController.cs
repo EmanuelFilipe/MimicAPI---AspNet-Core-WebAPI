@@ -7,11 +7,16 @@ using System.Threading.Tasks;
 namespace MimicAPI.V2.Controllers
 {
     [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("2.0")]
-    [Route("api/v{version:apiVersion}/palavras")]
     public class PalavrasController : ControllerBase
     {
-        [Route("", Name = "ObterTodas")]
+        /// <summary>
+        /// Operação que pega no banco de dados todas as palavras existentes.
+        /// </summary>
+        /// <param name="query">Filtros de pesquisa</param>
+        /// <returns>Listagem de palavras</returns>
+        [HttpGet("", Name = "ObterTodas")]
         public string ObterTodas()
         {
             return "Versão 2.0";
